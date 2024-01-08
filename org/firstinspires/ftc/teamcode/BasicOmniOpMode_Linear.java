@@ -77,7 +77,7 @@ public class BasicOmniOpMode_Linear extends LinearOpMode {
     private DcMotor lift = null;
     private Servo mainClaw = null;
 
-    double armPosition;
+    int armPosition;
     double MIN_POSITION = 0;
     double MAX_POSITION = 1;
     double armOffset = 0;
@@ -94,7 +94,11 @@ public class BasicOmniOpMode_Linear extends LinearOpMode {
         leftBackDrive  = hardwareMap.get(DcMotor.class, "left_back_drive");
         rightFrontDrive = hardwareMap.get(DcMotor.class, "right_front_drive");
         rightBackDrive = hardwareMap.get(DcMotor.class, "right_back_drive");
-        lift = hardwareMap.get(DcMotor.class, "lift");
+        lift = hardwareMap.get(DcMotor.class, "lift"); // name of motor 
+        lift.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+        //armPosition = lift.getCurrentPosition();
+        lift.setTargetPosition(-100);
+        lift.setMode(DcMotor.RunMode.RUN_TO_POSITION);
         mainClaw = hardwareMap.get(Servo.class, "mainClaw");
 
 /** ########################################################################################
@@ -115,7 +119,7 @@ public class BasicOmniOpMode_Linear extends LinearOpMode {
         
                 //lift init stuff
         lift.setDirection(DcMotor.Direction.FORWARD);
-        lift.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+        lift.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE); // JAK, remove this redundant call 
 
 
         // Wait for the game to start (driver presses PLAY)
@@ -133,6 +137,7 @@ public class BasicOmniOpMode_Linear extends LinearOpMode {
             double axial   = -gamepad1.left_stick_y;  // Note: pushing stick forward gives negative value
             double lateral =  -gamepad1.left_stick_x;
             double yaw     =  gamepad1.right_stick_x;
+            double liftAngle = gamepad2.left_stick_y; // liftAngle == Elbow
 
             // Combine the joystick requests for each axis-motion to determine each wheel's power.
             // Set up a variable for each drive wheel to save the power level for telemetry.
@@ -162,11 +167,14 @@ public class BasicOmniOpMode_Linear extends LinearOpMode {
             }
             
             //down
-            while(gamepad1.left_trigger > 0.1){
-                lift.setPower(-gamepad1.left_trigger*0.4);
-            }if (gamepad1.left_trigger < 0.1){
+            if(liftAngle != 0){ // liftAngle == -1 to 1
+                lift.setPower(1);
+                 lift.setTargetPosition(armPosition - (int) Math.round(liftAngle*100)); // Should be equal to full arc of arm
+            }else {
                 lift.setPower(0);
             }
+           
+    
 
 
             //Code for the claw
@@ -187,6 +195,7 @@ public class BasicOmniOpMode_Linear extends LinearOpMode {
             telemetry.addData("Status", "Run Time: " + runtime.toString());
             telemetry.addData("Front left/Right", "%4.2f, %4.2f", leftFrontPower, rightFrontPower);
             telemetry.addData("Back  left/Right", "%4.2f, %4.2f", leftBackPower, rightBackPower);
+            telemetry.addData("armInteger", "%s", lift.getCurrentPosition());
             telemetry.update();
 
             //sleep(50);
